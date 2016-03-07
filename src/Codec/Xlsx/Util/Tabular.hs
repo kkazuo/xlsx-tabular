@@ -42,9 +42,10 @@ type Cols =
 type RowValues =
   [(Int, [(Int, Maybe CellValue)])]
 
-toTableRows :: Xlsx
-            -> Text
-            -> Int
+-- |Decode cells as tabular rows.
+toTableRows :: Xlsx -- ^ Xlsx Workbook
+            -> Text -- ^ Worksheet name to decode
+            -> Int -- ^ Starting row index (header row)
             -> Maybe ([(Int, Text)], [(Int, [Maybe CellValue])])
 toTableRows xlsx sheetName offset =
   decodeRows <$> styles <*> Just offset <*> rows
