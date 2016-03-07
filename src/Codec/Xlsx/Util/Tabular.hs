@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -11,10 +12,14 @@ import Codec.Xlsx
 import Codec.Xlsx.Formatted
 import Control.Applicative
 import Control.Lens
-import Data.Map
+import Control.Monad (join)
 import Data.List (find)
+import Data.Map
 
 import qualified Data.ByteString.Lazy as ByteString
+
+import Data.IntSet (IntSet)
+import qualified Data.IntSet as IntSet
 
 someFunc :: IO ()
 someFunc = do
@@ -25,7 +30,7 @@ someFunc = do
       Right styles = parseStyleSheet (book ^. xlStyles)
       Just sheet = book ^? ixSheet sheetName
       rows = toRows (sheet ^. wsCells)
-  putStrLn (show (getCells styles 9 rows))
+  putStrLn (show (decodeRows styles 9 rows))
 
 type Rows =
   [(Int, Cols)]
@@ -35,6 +40,29 @@ type Cols =
 
 type RowValues =
   [(Int, [(Int, Maybe CellValue)])]
+
+decodeRows ss offset rs =
+  (header', rows)
+  where
+    rs' = getCells ss offset rs
+    header = (rs' !! 0) ^. _2
+    header' =
+      header
+      & fmap toText
+      & join
+    toText (i, Just (CellText t)) = [(i, t)]
+    toText _ = []
+    cix = fmap (view _1) header'
+      & IntSet.fromList
+    rows =
+      fmap rowValue (tail rs')
+    rowValue rvs =
+      rvs & _2 %~ join . fmap f
+      where
+        f (i, cell) =
+          if cix ^. contains i
+          then [cell]
+          else []
 
 -- |行から値のあるセルを取り出す
 getCells :: StyleSheet -- ^スタイルシート
