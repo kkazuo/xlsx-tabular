@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Codec.Xlsx.Util.Tabular
-       ( someFunc
+       ( toTableRowsFromFile
+       , toTableRows
        ) where
 
 import Debug.Trace
@@ -15,22 +16,22 @@ import Control.Lens
 import Control.Monad (join)
 import Data.List (find)
 import Data.Map
+import Data.Text (Text)
 
 import qualified Data.ByteString.Lazy as ByteString
 
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
 
-someFunc :: IO ()
-someFunc = do
-  s <- ByteString.readFile "sample.xlsx"
-  let book = toXlsx s
-      sheetNames = keys (book ^. xlSheets)
-      sheetName = head sheetNames
-      Right styles = parseStyleSheet (book ^. xlStyles)
-      Just sheet = book ^? ixSheet sheetName
-      rows = toRows (sheet ^. wsCells)
-  putStrLn (show (decodeRows styles 9 rows))
+toTableRowsFromFile :: String -> IO ()
+toTableRowsFromFile fname = do
+  s <- ByteString.readFile fname
+  let xlsx = toXlsx s
+  putStrLn (show (toTableRows xlsx (firstSheetName xlsx) 9))
+  where
+    firstSheetName xlsx =
+      keys (xlsx ^. xlSheets)
+      & head
 
 type Rows =
   [(Int, Cols)]
@@ -40,6 +41,20 @@ type Cols =
 
 type RowValues =
   [(Int, [(Int, Maybe CellValue)])]
+
+toTableRows :: Xlsx
+            -> Text
+            -> Int
+            -> Maybe ([(Int, Text)], [(Int, [Maybe CellValue])])
+toTableRows xlsx sheetName offset =
+  decodeRows <$> styles <*> Just offset <*> rows
+  where
+    styles = parseStyleSheet (xlsx ^. xlStyles) ^? _Right
+    rows =
+      xlsx
+      ^? ixSheet sheetName
+      . wsCells
+      . to toRows
 
 decodeRows ss offset rs =
   (header', rows)
