@@ -1,9 +1,19 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE TemplateHaskell   #-}
+-- | Convinience utility to decode Xlsx tabular.
 module Codec.Xlsx.Util.Tabular
-       ( toTableRowsFromFile
+       ( Tabular (..)
+       , tabularHeads
+       , tablarRows
+       , TabularHead (..)
+       , tabularHeadIx
+       , tabularHeadLabel
+       , TabularRow (..)
+       , tabularRowIx
+       , tabularCells
+       , toTableRowsFromFile
        , toTableRows
        ) where
 
@@ -23,6 +33,33 @@ import qualified Data.ByteString.Lazy as ByteString
 
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
+
+
+-- | Tabular cells
+data Tabular = Tabular
+  { _tabularHeads :: [TabularHead]
+  , _tablarRows :: [TabularRow]
+  }
+  deriving (Show)
+
+-- | Tabular header
+data TabularHead = TabularHead
+  { _tabularHeadIx :: Int -- ^ Column index
+  , _tabularHeadLabel :: Text -- ^ Column label
+  }
+  deriving (Show)
+
+-- | Tabular row
+data TabularRow = TabularRow
+  { _tabularRowIx :: Int -- ^ Row index
+  , _tabularCells :: [Maybe CellValue] -- ^ Row values
+  }
+  deriving (Show)
+
+makeLenses ''Tabular
+makeLenses ''TabularHead
+makeLenses ''TabularRow
+
 
 -- |Read from Xlsx file as tabular rows
 toTableRowsFromFile :: Int -- ^ Starting row index (header row)
@@ -50,7 +87,7 @@ type RowValues =
 toTableRows :: Xlsx -- ^ Xlsx Workbook
             -> Text -- ^ Worksheet name to decode
             -> Int -- ^ Starting row index (header row)
-            -> Maybe ([(Int, Text)], [(Int, [Maybe CellValue])])
+            -> Maybe Tabular
 toTableRows xlsx sheetName offset =
   decodeRows <$> styles <*> Just offset <*> rows
   where
@@ -62,7 +99,7 @@ toTableRows xlsx sheetName offset =
       . to toRows
 
 decodeRows ss offset rs =
-  (header', rows)
+  Tabular header' rows
   where
     rs' = getCells ss offset rs
     header = head rs' ^. _2
@@ -70,14 +107,14 @@ decodeRows ss offset rs =
       header
       & fmap toText
       & join
-    toText (i, Just (CellText t)) = [(i, t)]
+    toText (i, Just (CellText t)) = [TabularHead i t]
     toText _ = []
-    cix = fmap (view _1) header'
+    cix = fmap (view tabularHeadIx) header'
       & IntSet.fromList
     rows =
       fmap rowValue (tail rs')
     rowValue rvs =
-      rvs & _2 %~ join . fmap f
+      TabularRow (rvs ^. _1) (rvs ^. _2 & fmap f & join)
       where
         f (i, cell) =
           [cell | cix ^. contains i]
