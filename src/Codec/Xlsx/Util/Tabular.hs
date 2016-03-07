@@ -6,7 +6,7 @@
 module Codec.Xlsx.Util.Tabular
        ( Tabular (..)
        , tabularHeads
-       , tablarRows
+       , tabularRows
        , TabularHead (..)
        , tabularHeadIx
        , tabularHeadLabel
@@ -38,7 +38,7 @@ import qualified Data.IntSet as IntSet
 -- | Tabular cells
 data Tabular = Tabular
   { _tabularHeads :: [TabularHead]
-  , _tablarRows :: [TabularRow]
+  , _tabularRows :: [TabularRow]
   }
   deriving (Show)
 
