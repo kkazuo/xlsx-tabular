@@ -16,6 +16,7 @@ import Control.Lens
 import Control.Monad (join)
 import Data.List (find)
 import Data.Map
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 
 import qualified Data.ByteString.Lazy as ByteString
@@ -23,11 +24,14 @@ import qualified Data.ByteString.Lazy as ByteString
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
 
-toTableRowsFromFile :: String -> IO ()
-toTableRowsFromFile fname = do
+-- |Read from Xlsx file as tabular rows
+toTableRowsFromFile :: Int -- ^ Starting row index (header row)
+                    -> String -- ^ File name
+                    -> IO ()
+toTableRowsFromFile offset fname = do
   s <- ByteString.readFile fname
   let xlsx = toXlsx s
-  putStrLn (show (toTableRows xlsx (firstSheetName xlsx) 9))
+  print (toTableRows xlsx (firstSheetName xlsx) offset)
   where
     firstSheetName xlsx =
       keys (xlsx ^. xlSheets)
@@ -61,7 +65,7 @@ decodeRows ss offset rs =
   (header', rows)
   where
     rs' = getCells ss offset rs
-    header = (rs' !! 0) ^. _2
+    header = head rs' ^. _2
     header' =
       header
       & fmap toText
@@ -76,9 +80,7 @@ decodeRows ss offset rs =
       rvs & _2 %~ join . fmap f
       where
         f (i, cell) =
-          if cix ^. contains i
-          then [cell]
-          else []
+          [cell | cix ^. contains i]
 
 -- |行から値のあるセルを取り出す
 getCells :: StyleSheet -- ^スタイルシート
@@ -96,7 +98,7 @@ getCells ss i rs =
     filter =
       Prelude.filter
     vs (i, cs) =
-      any (\(_, v) -> v /= Nothing) cs
+      any (\(_, v) -> isJust v) cs
 
 startAt :: StyleSheet -> Int -> Rows -> Rows
 startAt ss i rs =
@@ -129,7 +131,7 @@ rowValues cs =
       (i, cell ^. cellValue)
 
 cellHasBorder ss cell v =
-  maybe False id mb
+  fromMaybe False mb
   where
     b = cellBorder ss cell
     mb = borderStyleHasLine v <$> b
@@ -138,16 +140,16 @@ cellBorder :: StyleSheet -> Cell -> Maybe Border
 cellBorder ss cell =
   view cellStyle cell
   >>= pure . xf
-  >>= (view cellXfBorderId)
+  >>= view cellXfBorderId
   >>= pure . bd
   where
     xf n = (ss ^. styleSheetCellXfs) !! n
     bd n = (ss ^. styleSheetBorders) !! n
 
 borderStyleHasLine v b =
-  maybe False id value
+  fromMaybe False value
   where
   value =
     view v b
-    >>= (view borderStyleLine)
+    >>= view borderStyleLine
     >>= pure . (/= LineStyleNone)
