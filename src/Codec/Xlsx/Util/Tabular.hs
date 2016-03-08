@@ -1,26 +1,32 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
 -- | Convinience utility to decode Xlsx tabular.
 module Codec.Xlsx.Util.Tabular
-       ( Tabular (..)
+       ( Tabular
+       , mkTabular
        , tabularHeads
        , tabularRows
-       , TabularHead (..)
+       , TabularHead
+       , mkTabularHead
        , tabularHeadIx
        , tabularHeadLabel
-       , TabularRow (..)
+       , TabularRow
+       , mkTabularRow
        , tabularRowIx
        , tabularCells
        , toTableRowsFromFile
        , toTableRows
+       , parseJSON
+       , toJSON
        ) where
 
 import Debug.Trace
 
 import Codec.Xlsx
 import Codec.Xlsx.Formatted
+import Codec.Xlsx.Util.Tabular.Types
+import Codec.Xlsx.Util.Tabular.Json
 import Control.Applicative
 import Control.Lens
 import Control.Monad (join)
@@ -29,36 +35,12 @@ import Data.Map
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 
+import Data.Aeson (toJSON, parseJSON, encode)
+
 import qualified Data.ByteString.Lazy as ByteString
 
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
-
-
--- | Tabular cells
-data Tabular = Tabular
-  { _tabularHeads :: [TabularHead]
-  , _tabularRows :: [TabularRow]
-  }
-  deriving (Show)
-
--- | Tabular header
-data TabularHead = TabularHead
-  { _tabularHeadIx :: Int -- ^ Column index
-  , _tabularHeadLabel :: Text -- ^ Column label
-  }
-  deriving (Show)
-
--- | Tabular row
-data TabularRow = TabularRow
-  { _tabularRowIx :: Int -- ^ Row index
-  , _tabularCells :: [Maybe CellValue] -- ^ Row values
-  }
-  deriving (Show)
-
-makeLenses ''Tabular
-makeLenses ''TabularHead
-makeLenses ''TabularRow
 
 
 -- |Read from Xlsx file as tabular rows
@@ -68,7 +50,9 @@ toTableRowsFromFile :: Int -- ^ Starting row index (header row)
 toTableRowsFromFile offset fname = do
   s <- ByteString.readFile fname
   let xlsx = toXlsx s
-  print (toTableRows xlsx (firstSheetName xlsx) offset)
+      rows = toTableRows xlsx (firstSheetName xlsx) offset
+  --print rows
+  ByteString.putStrLn $ encode rows
   where
     firstSheetName xlsx =
       keys (xlsx ^. xlSheets)
@@ -99,7 +83,7 @@ toTableRows xlsx sheetName offset =
       . to toRows
 
 decodeRows ss offset rs =
-  Tabular header' rows
+  mkTabular header' rows
   where
     rs' = getCells ss offset rs
     header = head rs' ^. _2
@@ -107,14 +91,14 @@ decodeRows ss offset rs =
       header
       & fmap toText
       & join
-    toText (i, Just (CellText t)) = [TabularHead i t]
+    toText (i, Just (CellText t)) = [mkTabularHead i t]
     toText _ = []
     cix = fmap (view tabularHeadIx) header'
       & IntSet.fromList
     rows =
       fmap rowValue (tail rs')
     rowValue rvs =
-      TabularRow (rvs ^. _1) (rvs ^. _2 & fmap f & join)
+      mkTabularRow (rvs ^. _1) (rvs ^. _2 & fmap f & join)
       where
         f (i, cell) =
           [cell | cix ^. contains i]
