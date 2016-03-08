@@ -46,13 +46,12 @@ import qualified Data.IntSet as IntSet
 -- |Read from Xlsx file as tabular rows
 toTableRowsFromFile :: Int -- ^ Starting row index (header row)
                     -> String -- ^ File name
-                    -> IO ()
+                    -> IO (Maybe Tabular)
 toTableRowsFromFile offset fname = do
   s <- ByteString.readFile fname
   let xlsx = toXlsx s
       rows = toTableRows xlsx (firstSheetName xlsx) offset
-  --print rows
-  ByteString.putStrLn $ encode rows
+  pure rows
   where
     firstSheetName xlsx =
       keys (xlsx ^. xlSheets)
