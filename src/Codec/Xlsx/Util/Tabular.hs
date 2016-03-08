@@ -110,6 +110,7 @@ getCells :: StyleSheet -- ^スタイルシート
          -> RowValues
 getCells ss i rs =
   startAt ss i rs
+  & takeContiguous i
   & takeUntil ss
   & fmap rvs
   & filter vs
@@ -128,12 +129,19 @@ startAt ss i rs =
     f (x, _) =
       x < i
 
+-- |指定の行から連続している行を取り出す
+takeContiguous :: Int -> Rows -> Rows
+takeContiguous i rs =
+  [r | (x, r@(y, _)) <- zip [i..] rs, x == y]
+
+-- |有効セルのすべてに枠線（Bottom側）が存在しなくなる
+-- |すなわち枠囲みの欄外になるまでの行を取り出す
 takeUntil :: StyleSheet -> Rows -> Rows
 takeUntil ss rs =
   takeWhile f rs
   where
     f (i, cs) =
-      and $ rowBordersHas borderBottom ss cs
+      or $ rowBordersHas borderBottom ss cs
 
 rowBordersHas v ss cs =
   x
