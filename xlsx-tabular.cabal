@@ -1,6 +1,6 @@
 name:                xlsx-tabular
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            Xlsx table decode utility
 description:         Please see README.md
 homepage:            http://github.com/kkazuo/xlsx-tabular#readme
 license:             BSD3
@@ -16,12 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Codec.Xlsx.Util.Tabular
-  build-depends:       base >= 4.7 && < 5
-                     , xlsx >= 0.2 && < 1
-                     , bytestring >= 0.10 && < 1
-                     , text >= 1.2 && < 2
-                     , lens >= 4.13 && < 5
-                     , containers >= 0.5 && < 1
+  build-depends:       base
+                     , bytestring
+                     , containers
+                     , lens
+                     , text
+                     , xlsx
   default-language:    Haskell2010
 
 test-suite xlsx-tabular-test
