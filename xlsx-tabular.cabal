@@ -19,7 +19,7 @@ library
                      , Codec.Xlsx.Util.Tabular.Types
                      , Codec.Xlsx.Util.Tabular.Imports
                      , Codec.Xlsx.Util.Tabular.Json
-  build-depends:       base
+  build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
                      , containers
