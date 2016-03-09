@@ -15,8 +15,8 @@ module Codec.Xlsx.Util.Tabular.Types
        , tabularCells
        ) where
 
-import Codec.Xlsx
-import Control.Lens
+import Codec.Xlsx (CellValue)
+import Control.Lens (makeLenses)
 import Data.Text (Text)
 
 

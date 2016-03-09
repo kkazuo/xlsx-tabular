@@ -17,30 +17,12 @@ module Codec.Xlsx.Util.Tabular
        , tabularCells
        , toTableRowsFromFile
        , toTableRows
-       , parseJSON
-       , toJSON
        ) where
 
 import Debug.Trace
 
-import Codec.Xlsx
-import Codec.Xlsx.Formatted
-import Codec.Xlsx.Util.Tabular.Types
-import Codec.Xlsx.Util.Tabular.Json
-import Control.Applicative
-import Control.Lens
-import Control.Monad (join)
-import Data.List (find)
-import Data.Map
-import Data.Maybe (fromMaybe, isJust)
-import Data.Text (Text)
-
-import Data.Aeson (toJSON, parseJSON, encode)
-
+import Codec.Xlsx.Util.Tabular.Imports
 import qualified Data.ByteString.Lazy as ByteString
-
-import Data.IntSet (IntSet)
-import qualified Data.IntSet as IntSet
 
 
 -- |Read from Xlsx file as tabular rows
@@ -93,7 +75,7 @@ decodeRows ss offset rs =
     toText (i, Just (CellText t)) = [mkTabularHead i t]
     toText _ = []
     cix = fmap (view tabularHeadIx) header'
-      & IntSet.fromList
+      & fromList
     rows =
       fmap rowValue (tail rs')
     rowValue rvs =

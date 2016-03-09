@@ -6,18 +6,13 @@ module Codec.Xlsx.Util.Tabular.Json
        , toJSON
        ) where
 
-import Codec.Xlsx
-import Codec.Xlsx.Util.Tabular.Types
-import Control.Applicative
-import qualified Control.Lens as Lens
-import Data.Aeson
-import Data.Aeson.TH
-import Data.Char
+import Codec.Xlsx.Util.Tabular.Imports
+import Data.Char (toLower)
 
 
 instance ToJSON RichTextRun where
   toJSON r =
-    object [ "text" .= Lens.view richTextRunText r ]
+    object [ "text" .= view richTextRunText r ]
 
 instance FromJSON RichTextRun where
   parseJSON (Object v) =
