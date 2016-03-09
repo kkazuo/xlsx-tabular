@@ -3,16 +3,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Convinience utility to read Xlsx tabular cells.
 module Codec.Xlsx.Util.Tabular
-       ( Tabular
+       (
+         -- * Types
+         Tabular
+       , TabularHead
+       , TabularRow
+         -- * Lenses
+         -- ** Tabular
        , tabularHeads
        , tabularRows
-       , TabularHead
+         -- ** TabularHead
        , tabularHeadIx
        , tabularHeadLabel
-       , TabularRow
+         -- ** TabularRow
        , tabularRowIx
-       , tabularCells
+       , tabularRowCells
+         -- * Methods
        , def
+         -- * Functions
        , toTableRowsFromFile
        , toTableRows
        , toTableRows'
@@ -90,7 +98,7 @@ decodeRows ss offset rs =
     rowValue rvs =
       def
       & tabularRowIx .~ (rvs ^. _1)
-      & tabularCells .~ (rvs ^. _2 & fmap f & join)
+      & tabularRowCells .~ (rvs ^. _2 & fmap f & join)
       where
         f (i, cell) =
           [cell | cix ^. contains i]

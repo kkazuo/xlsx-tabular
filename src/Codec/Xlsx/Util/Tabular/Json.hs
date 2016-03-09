@@ -26,7 +26,7 @@ deriveJSON defaultOptions
 
 
 deriveJSON defaultOptions
-  { fieldLabelModifier = map toLower . drop 8
+  { fieldLabelModifier = map toLower . drop 11
   , constructorTagModifier = map toLower
   } ''TabularRow
 

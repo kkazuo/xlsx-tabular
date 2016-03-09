@@ -10,7 +10,7 @@ module Codec.Xlsx.Util.Tabular.Types
        , tabularHeadLabel
        , TabularRow
        , tabularRowIx
-       , tabularCells
+       , tabularRowCells
        , def
        ) where
 
@@ -37,7 +37,7 @@ data TabularHead = TabularHead
 -- | Tabular row
 data TabularRow = TabularRow
   { _tabularRowIx :: Int -- ^ Row index
-  , _tabularCells :: [Maybe CellValue] -- ^ Row values
+  , _tabularRowCells :: [Maybe CellValue] -- ^ Row values
   }
   deriving (Show)
 
