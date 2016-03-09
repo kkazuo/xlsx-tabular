@@ -10,7 +10,7 @@ module Codec.Xlsx.Util.Tabular.Imports
        , view
        , to
        , contains
-       , (^.), (^?), (&), _1, _2, _Right
+       , (^.), (^?), (.~), (?~), (&), _1, _2, _Right
        , Text
        , IntSet
        , IntSet.fromList
@@ -29,7 +29,10 @@ import Codec.Xlsx as X
 import Codec.Xlsx.Formatted as X
 import Codec.Xlsx.Util.Tabular.Types as X
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens ((^.), (^?), (&), _1, _2, _Right, view, to, contains)
+import Control.Lens ( (^.), (^?), (.~), (?~), (&)
+                    , _1, _2, _Right
+                    , view, to, contains
+                    )
 import Control.Monad (join)
 import Data.List (find)
 import Data.Map (keys)

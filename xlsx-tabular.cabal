@@ -22,6 +22,7 @@ library
                      , aeson
                      , bytestring
                      , containers
+                     , data-default
                      , lens
                      , text
                      , xlsx

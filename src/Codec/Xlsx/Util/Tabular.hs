@@ -4,17 +4,15 @@
 -- | Convinience utility to decode Xlsx tabular.
 module Codec.Xlsx.Util.Tabular
        ( Tabular
-       , mkTabular
        , tabularHeads
        , tabularRows
        , TabularHead
-       , mkTabularHead
        , tabularHeadIx
        , tabularHeadLabel
        , TabularRow
-       , mkTabularRow
        , tabularRowIx
        , tabularCells
+       , def
        , toTableRowsFromFile
        , toTableRows
        ) where
@@ -64,7 +62,9 @@ toTableRows xlsx sheetName offset =
       . to toRows
 
 decodeRows ss offset rs =
-  mkTabular header' rows
+  def
+  & tabularHeads .~ header'
+  & tabularRows .~ rows
   where
     rs' = getCells ss offset rs
     header = head rs' ^. _2
@@ -72,14 +72,18 @@ decodeRows ss offset rs =
       header
       & fmap toText
       & join
-    toText (i, Just (CellText t)) = [mkTabularHead i t]
+    toText (i, Just (CellText t)) = [def
+                                     & tabularHeadIx .~ i
+                                     & tabularHeadLabel .~ t]
     toText _ = []
     cix = fmap (view tabularHeadIx) header'
       & fromList
     rows =
       fmap rowValue (tail rs')
     rowValue rvs =
-      mkTabularRow (rvs ^. _1) (rvs ^. _2 & fmap f & join)
+      def
+      & tabularRowIx .~ (rvs ^. _1)
+      & tabularCells .~ (rvs ^. _2 & fmap f & join)
       where
         f (i, cell) =
           [cell | cix ^. contains i]

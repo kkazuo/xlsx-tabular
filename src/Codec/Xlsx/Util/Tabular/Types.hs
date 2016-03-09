@@ -1,22 +1,22 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Codec.Xlsx.Util.Tabular.Types
        ( Tabular
-       , mkTabular
        , tabularHeads
        , tabularRows
        , TabularHead
-       , mkTabularHead
        , tabularHeadIx
        , tabularHeadLabel
        , TabularRow
-       , mkTabularRow
        , tabularRowIx
        , tabularCells
+       , def
        ) where
 
 import Codec.Xlsx (CellValue)
 import Control.Lens (makeLenses)
+import Data.Default (Default, def)
 import Data.Text (Text)
 
 
@@ -47,22 +47,13 @@ makeLenses ''TabularHead
 makeLenses ''TabularRow
 
 
-mkTabular :: [TabularHead]
-          -> [TabularRow]
-          -> Tabular
-mkTabular =
-  Tabular
+instance Default Tabular where
+  def = Tabular [] []
 
 
-mkTabularHead :: Int
-              -> Text
-              -> TabularHead
-mkTabularHead =
-  TabularHead
+instance Default TabularRow where
+  def = TabularRow 0 []
 
 
-mkTabularRow :: Int
-             -> [Maybe CellValue]
-             -> TabularRow
-mkTabularRow =
-  TabularRow
+instance Default TabularHead where
+  def = TabularHead 0 ""
