@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
--- | Convinience utility to decode Xlsx tabular.
+-- | Convinience utility to read Xlsx tabular cells.
 module Codec.Xlsx.Util.Tabular
        ( Tabular
        , tabularHeads

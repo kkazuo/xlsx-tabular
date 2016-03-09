@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
--- | Convinience utility to decode Xlsx tabular.
+-- | JSON supports of Tabular.
 module Codec.Xlsx.Util.Tabular.Json
        ( parseJSON
        , toJSON
