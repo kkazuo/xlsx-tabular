@@ -15,27 +15,11 @@ module Codec.Xlsx.Util.Tabular
        , def
        , toTableRowsFromFile
        , toTableRows
+       , toTableRows'
        ) where
-
-import Debug.Trace
 
 import Codec.Xlsx.Util.Tabular.Imports
 import qualified Data.ByteString.Lazy as ByteString
-
-
--- |Read from Xlsx file as tabular rows
-toTableRowsFromFile :: Int -- ^ Starting row index (header row)
-                    -> String -- ^ File name
-                    -> IO (Maybe Tabular)
-toTableRowsFromFile offset fname = do
-  s <- ByteString.readFile fname
-  let xlsx = toXlsx s
-      rows = toTableRows xlsx (firstSheetName xlsx) offset
-  pure rows
-  where
-    firstSheetName xlsx =
-      keys (xlsx ^. xlSheets)
-      & head
 
 type Rows =
   [(Int, Cols)]
@@ -45,6 +29,17 @@ type Cols =
 
 type RowValues =
   [(Int, [(Int, Maybe CellValue)])]
+
+
+-- |Read from Xlsx file as tabular rows
+toTableRowsFromFile :: Int -- ^ Starting row index (header row)
+                    -> String -- ^ File name
+                    -> IO (Maybe Tabular)
+toTableRowsFromFile offset fname = do
+  s <- ByteString.readFile fname
+  let xlsx = toXlsx s
+      rows = toTableRows' xlsx offset
+  pure rows
 
 -- |Decode cells as tabular rows.
 toTableRows :: Xlsx -- ^ Xlsx Workbook
@@ -60,6 +55,18 @@ toTableRows xlsx sheetName offset =
       ^? ixSheet sheetName
       . wsCells
       . to toRows
+
+-- |Decode cells as tabular rows from first sheet.
+toTableRows' :: Xlsx -- ^ Xlsx Workbook
+             -> Int -- ^ Starting row index (header row)
+             -> Maybe Tabular
+toTableRows' xlsx offset =
+  toTableRows xlsx firstSheetName offset
+  where
+    firstSheetName =
+      xlsx ^. xlSheets
+      & keys
+      & head
 
 decodeRows ss offset rs =
   def
