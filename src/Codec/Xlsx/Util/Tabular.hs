@@ -73,8 +73,8 @@ toTableRows' xlsx offset =
   where
     firstSheetName =
       xlsx ^. xlSheets
-      & keys
       & head
+      & fst
 
 decodeRows ss offset rs =
   def
