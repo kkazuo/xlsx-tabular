@@ -25,7 +25,7 @@ module Codec.Xlsx.Util.Tabular.Imports
        )
        where
 
-import Codec.Xlsx as X hiding (fromList)
+import Codec.Xlsx as X
 import Codec.Xlsx.Formatted as X
 import Codec.Xlsx.Util.Tabular.Types as X
 import Control.Applicative ((<$>), (<*>))
