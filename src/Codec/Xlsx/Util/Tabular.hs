@@ -90,7 +90,7 @@ getCells :: StyleSheet -- ^スタイルシート
 getCells ss i = filter (any (isJust . snd) . snd)
               . (fmap . fmap) rowValues
               . takeContiguous i
-              . takeUntil ss
+              -- . takeUntil ss
               . startAt ss i
 
 startAt :: StyleSheet -> Int -> Rows -> Rows
