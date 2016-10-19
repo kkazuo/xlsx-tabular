@@ -26,7 +26,7 @@ library
                      , data-default
                      , lens
                      , text
-                     , xlsx > 0.3
+                     , xlsx >= 0.3
   default-language:    Haskell2010
 
 test-suite xlsx-tabular-test
