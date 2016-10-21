@@ -98,18 +98,19 @@ startAt ss i = dropWhile ((< i) . fst)
 
 -- |指定の行から連続している行を取り出す
 takeContiguous :: Int -> Rows -> Rows
-takeContiguous i rs = [r | (x, r@(y, _)) <- zip [i..] rs, x == y]
+--takeContiguous i rs = [r | (x, r@(y, _)) <- zip [i..] rs, x == y]
+takeContiguous i = map snd . filter (uncurry (==) . fmap fst) . zip [i..]
 
 -- |有効セルのすべてに枠線（Bottom側）が存在しなくなる
 -- |すなわち枠囲みの欄外になるまでの行を取り出す
 takeUntil :: StyleSheet -> Rows -> Rows
 takeUntil ss = takeWhile f
   where
-    f (i, cs) = or $ rowBordersHas borderBottom ss cs
+    f = or . rowBordersHas borderBottom ss . snd
 
-rowBordersHas v ss = fmap (cellHasBorder v ss . snd)
+rowBordersHas v ss = map (cellHasBorder v ss . snd)
 
-rowValues = fmap (fmap (view cellValue))
+rowValues = map (fmap _cellValue)
 
 cellHasBorder v ss cell = fromMaybe False mb
   where
