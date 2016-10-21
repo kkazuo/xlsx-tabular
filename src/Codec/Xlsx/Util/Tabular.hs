@@ -46,8 +46,6 @@ module Codec.Xlsx.Util.Tabular
          -- ** TabularRow
        , tabularRowIx
        , tabularRowCells
-         -- * Methods
-       , def
          -- * Functions
        , toTableRowsFromFile
        , toTableRows
