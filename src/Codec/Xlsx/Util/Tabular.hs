@@ -103,10 +103,10 @@ decodeRows ss offset rs =
         f (i, cell) =
           [cell | cix ^. contains i]
 
--- |行から値のあるセルを取り出す
-getCells :: StyleSheet -- ^スタイルシート
-         -> Int -- ^開始行
-         -> Rows -- ^セル行
+-- |Pickup cells that has value from line
+getCells :: StyleSheet -- ^ Stylesheet
+         -> Int -- ^ Start line number
+         -> Rows -- ^ cell rows
          -> RowValues
 getCells ss i rs =
   startAt ss i rs
@@ -129,13 +129,13 @@ startAt ss i rs =
     f (x, _) =
       x < i
 
--- |指定の行から連続している行を取り出す
+-- |Take contiguous rows that start from i
 takeContiguous :: Int -> Rows -> Rows
 takeContiguous i rs =
   [r | (x, r@(y, _)) <- zip [i..] rs, x == y]
 
--- |有効セルのすべてに枠線（Bottom側）が存在しなくなる
--- |すなわち枠囲みの欄外になるまでの行を取り出す
+-- |Take rows while all valued cell has bottom border line.
+-- |  * no bottom border line means out of table.
 takeUntil :: StyleSheet -> Rows -> Rows
 takeUntil ss rs =
   takeWhile f rs
