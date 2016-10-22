@@ -14,6 +14,7 @@ module Codec.Xlsx.Util.Tabular.Imports
        , Text
        , IntSet
        , IntSet.fromList
+       , IntSet.member
        , FromJSON, parseJSON
        , ToJSON, toJSON
        , Value(Object), object

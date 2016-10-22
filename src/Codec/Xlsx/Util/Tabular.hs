@@ -114,31 +114,30 @@ toTableRowsCustom :: (StyleSheet -> (Int, [(Int, Cell)]) -> Bool)
                   -> Text  -- ^ Worksheet name to decode
                   -> Int   -- ^ Starting row index (header row)
                   -> Maybe Tabular
-toTableRowsCustom predicate xlsx sheetName offset =
-  decodeRows . predicate <$> styles <*> Just offset <*> rows
-  where
-    styles = parseStyleSheet (xlsx ^. xlStyles) ^? _Right
-    rows = xlsx ^? ixSheet sheetName . wsCells . to toRows
+toTableRowsCustom predicate xlsx sheetName offset = do
+  styles <- parseStyleSheet (xlsx ^. xlStyles) ^? _Right
+  rows   <- xlsx ^? ixSheet sheetName . wsCells . to toRows
+  decodeRows (predicate styles) offset rows
 
-decodeRows p offset rs =
+decodeRows p offset rs = if null rs' then Nothing else Just $
   def
   & tabularHeads .~ header'
-  & tabularRows .~ rows
+  & tabularRows  .~ rows
   where
     rs' = getCells p offset rs
     header = head rs' ^. _2
-    header' = join $ toText <$> header
+    header' = join $ map toText header
     toText (i, Just (CellText t)) = [def
                                      & tabularHeadIx .~ i
                                      & tabularHeadLabel .~ t]
     toText _ = []
-    cix = fmap (view tabularHeadIx) header' & fromList
+    cix = fromList $ map (view tabularHeadIx) header'
     rows = fmap rowValue (tail rs')
     rowValue rvs = def
-                 & tabularRowIx .~ (rvs ^. _1)
-                 & tabularRowCells .~ (rvs ^. _2 & fmap f & join)
+                 & tabularRowIx    .~ fst rvs
+                 & tabularRowCells .~ (map snd . filter f . snd) rvs
       where
-        f (i, cell) = [cell | cix ^. contains i]
+        f = flip member cix . fst
 
 -- |Pickup cells that has value from line
 getCells :: (Row -> Bool) -- ^ Predicate
