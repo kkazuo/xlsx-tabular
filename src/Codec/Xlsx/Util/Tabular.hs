@@ -46,8 +46,6 @@ module Codec.Xlsx.Util.Tabular
          -- ** TabularRow
        , tabularRowIx
        , tabularRowCells
-         -- * Methods
-       , def
          -- * Functions
        , toTableRowsFromFile
        , toTableRows
@@ -59,24 +57,19 @@ module Codec.Xlsx.Util.Tabular
 import Codec.Xlsx.Util.Tabular.Imports
 import qualified Data.ByteString.Lazy as ByteString
 
-type Row =
-  (Int, Cols)
+type Row = (Int, Cols)
 
-type Rows =
-  [(Int, Cols)] -- [Row]
+type Rows = [(Int, Cols)] -- [Row]
 
-type Cols =
-  [(Int, Cell)]
+type Cols = [(Int, Cell)]
 
-type RowValues =
-  [(Int, [(Int, Maybe CellValue)])]
+type RowValues = [(Int, [(Int, Maybe CellValue)])]
 
 -- | A @RowPredicate@ is given the Xlsx "StyleSheet" as well as the
 -- row itself (consisting of the row's index and the row's cells) and
 -- should return @True@ if the row is part of the table and false
 -- otherwise.
-type RowPredicate =
-  StyleSheet -> Row -> Bool
+type RowPredicate = StyleSheet -> Row -> Bool
 
 -- |Read tabular rows from the first sheel of an Xlsx file.
 -- The table is assumed to consist of all contiguous rows
@@ -84,11 +77,8 @@ type RowPredicate =
 toTableRowsFromFile :: Int -- ^ Starting row index (header row)
                     -> String -- ^ File name
                     -> IO (Maybe Tabular)
-toTableRowsFromFile offset fname = do
-  s <- ByteString.readFile fname
-  let xlsx = toXlsx s
-      rows = toTableRows' xlsx offset
-  pure rows
+toTableRowsFromFile offset fname =
+  flip toTableRows' offset . toXlsx <$> ByteString.readFile fname
 
 -- |Decode cells as tabular rows.
 -- The table is assumed to consist of all contiguous rows
@@ -105,8 +95,7 @@ toTableRows = toTableRowsCustom borderBottomPredicate
 toTableRows' :: Xlsx -- ^ Xlsx Workbook
              -> Int -- ^ Starting row index (header row)
              -> Maybe Tabular
-toTableRows' xlsx offset =
-  toTableRows xlsx firstSheetName offset
+toTableRows' xlsx = toTableRows xlsx firstSheetName
   where
     firstSheetName = fst $ head $ xlsx ^. xlSheets
     -- ^ TODO: Is this still true with xlsx-0.3 or are sheets now
@@ -133,102 +122,65 @@ toTableRowsCustom predicate xlsx sheetName offset = do
 decodeRows p offset rs = if null rs' then Nothing else Just $
   def
   & tabularHeads .~ header'
-  & tabularRows .~ rows
+  & tabularRows  .~ rows
   where
     rs' = getCells p offset rs
     header = head rs' ^. _2
-    header' =
-      header
-      & fmap toText
-      & join
+    header' = join $ map toText header
     toText (i, Just (CellText t)) = [def
                                      & tabularHeadIx .~ i
                                      & tabularHeadLabel .~ t]
     toText _ = []
-    cix = fmap (view tabularHeadIx) header'
-      & fromList
-    rows =
-      fmap rowValue (tail rs')
-    rowValue rvs =
-      def
-      & tabularRowIx .~ (rvs ^. _1)
-      & tabularRowCells .~ (rvs ^. _2 & fmap f & join)
+    cix = fromList $ map (view tabularHeadIx) header'
+    rows = fmap rowValue (tail rs')
+    rowValue rvs = def
+                 & tabularRowIx    .~ fst rvs
+                 & tabularRowCells .~ (map snd . filter f . snd) rvs
       where
-        f (i, cell) =
-          [cell | cix ^. contains i]
+        f = flip member cix . fst
 
 -- |Pickup cells that has value from line
 getCells :: (Row -> Bool) -- ^ Predicate
          -> Int -- ^ Start line number
          -> Rows -- ^ cell rows
          -> RowValues
-getCells p i rs =
-  startAt i rs
-  & takeContiguous i
-  & takeWhile p
-  & fmap rvs
-  & filter vs
-  where
-    rvs (i, cs) =
-      (i, rowValues cs)
-    filter =
-      Prelude.filter
-    vs (i, cs) =
-      any (\(_, v) -> isJust v) cs
+getCells p i = filter (any (isJust . snd) . snd)
+              . (fmap . fmap) rowValues
+              . takeContiguous i
+              . takeWhile p
+              . startAt i
 
 startAt :: Int -> Rows -> Rows
-startAt i rs =
-  dropWhile f rs
-  where
-    f (x, _) =
-      x < i
+startAt i = dropWhile ((< i) . fst)
 
 -- |Take contiguous rows that start from i
 takeContiguous :: Int -> Rows -> Rows
-takeContiguous i rs =
-  [r | (x, r@(y, _)) <- zip [i..] rs, x == y]
+--takeContiguous i rs = [r | (x, r@(y, _)) <- zip [i..] rs, x == y]
+takeContiguous i = map snd . filter (uncurry (==) . fmap fst) . zip [i..]
+
+rowValues = map (fmap _cellValue)
+
+-- Predicate for at least one cell having a bottom border style.
 
 -- |Take rows while all valued cell has bottom border line.
 -- |  * no bottom border line means out of table.
 borderBottomPredicate :: RowPredicate -- StyleSheet -> Row -> Bool
 borderBottomPredicate ss = or . rowBordersHas borderBottom ss . snd
 
-rowBordersHas v ss cs =
-  x
-  where
-    x =
-      fmap f cs
-    f (i, cell) =
-      cellHasBorder ss cell v
+rowBordersHas v ss = map (cellHasBorder v ss . snd)
 
-rowValues cs =
-  x
-  where
-    x =
-      fmap f cs
-    f (i, cell) =
-      (i, cell ^. cellValue)
 
-cellHasBorder ss cell v =
-  fromMaybe False mb
+cellHasBorder v ss cell = fromMaybe False mb
   where
-    b = cellBorder ss cell
-    mb = borderStyleHasLine v <$> b
+    mb = borderStyleHasLine v <$> cellBorder ss cell
 
 cellBorder :: StyleSheet -> Cell -> Maybe Border
-cellBorder ss cell =
-  view cellStyle cell
-  >>= pure . xf
-  >>= view cellXfBorderId
-  >>= pure . bd
+cellBorder ss cell = fmap xf (view cellStyle cell)
+                 >>= fmap bd . view cellXfBorderId
   where
     xf n = (ss ^. styleSheetCellXfs) !! n
     bd n = (ss ^. styleSheetBorders) !! n
 
-borderStyleHasLine v b =
-  fromMaybe False value
+borderStyleHasLine v b = fromMaybe False value
   where
-  value =
-    view v b
-    >>= view borderStyleLine
-    >>= pure . (/= LineStyleNone)
+    value = view v b >>= fmap (/= LineStyleNone) . view borderStyleLine
