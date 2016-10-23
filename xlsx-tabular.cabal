@@ -1,5 +1,5 @@
 name:                xlsx-tabular
-version:             0.1.0.2
+version:             0.1.1
 synopsis:            Xlsx table decode utility
 description:         Please see README.md
 homepage:            http://github.com/kkazuo/xlsx-tabular#readme
@@ -26,7 +26,7 @@ library
                      , data-default
                      , lens
                      , text
-                     , xlsx
+                     , xlsx >= 0.3
   default-language:    Haskell2010
 
 test-suite xlsx-tabular-test

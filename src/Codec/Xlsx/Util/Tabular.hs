@@ -1,7 +1,35 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
--- | Convinience utility to read Xlsx tabular cells.
+
+{- | Convenience utility to read Xlsx tabular cells.
+
+The majority of the @toTableRows*@ functions assume that the table
+of interest consiste of contiguous rows styled with borders lines
+surrounding all cells, with possible text above and below the table
+that is not of interest. Like so:
+
+@
+Some documentation here....
+---------------------------
+| Header1 | Header2 | ... |
+---------------------------
+| Value1  | Value2  | ... |
+---------------------------
+| Value1  | Value2  | ... |
+---------------------------
+Maybe some annoying text here, I don't care about.
+@
+
+The heauristic used for table row selection in these functions is
+that any table rows will have a bottom border line.
+
+If the above heuristic is not valid for your table you can instead
+provide your own row selection predicate to the `toTableRowsCustom`
+function. For example, the predicate @\\_ _ -> True@ (or @(const
+. const) True@) will select all contiguous rows.
+
+-}
 module Codec.Xlsx.Util.Tabular
        (
          -- * Types
@@ -24,13 +52,18 @@ module Codec.Xlsx.Util.Tabular
        , toTableRowsFromFile
        , toTableRows
        , toTableRows'
+         -- * Custom row predicates
+       , toTableRowsCustom
        ) where
 
 import Codec.Xlsx.Util.Tabular.Imports
 import qualified Data.ByteString.Lazy as ByteString
 
+type Row =
+  (Int, Cols)
+
 type Rows =
-  [(Int, Cols)]
+  [(Int, Cols)] -- [Row]
 
 type Cols =
   [(Int, Cell)]
@@ -38,8 +71,16 @@ type Cols =
 type RowValues =
   [(Int, [(Int, Maybe CellValue)])]
 
+-- | A @RowPredicate@ is given the Xlsx "StyleSheet" as well as the
+-- row itself (consisting of the row's index and the row's cells) and
+-- should return @True@ if the row is part of the table and false
+-- otherwise.
+type RowPredicate =
+  StyleSheet -> Row -> Bool
 
--- |Read from Xlsx file as tabular rows
+-- |Read tabular rows from the first sheel of an Xlsx file.
+-- The table is assumed to consist of all contiguous rows
+-- that have bottom border lines, starting with the header.
 toTableRowsFromFile :: Int -- ^ Starting row index (header row)
                     -> String -- ^ File name
                     -> IO (Maybe Tabular)
@@ -50,38 +91,51 @@ toTableRowsFromFile offset fname = do
   pure rows
 
 -- |Decode cells as tabular rows.
+-- The table is assumed to consist of all contiguous rows
+-- that have bottom border lines, starting with the header.
 toTableRows :: Xlsx -- ^ Xlsx Workbook
             -> Text -- ^ Worksheet name to decode
             -> Int -- ^ Starting row index (header row)
             -> Maybe Tabular
-toTableRows xlsx sheetName offset =
-  decodeRows <$> styles <*> Just offset <*> rows
-  where
-    styles = parseStyleSheet (xlsx ^. xlStyles) ^? _Right
-    rows =
-      xlsx
-      ^? ixSheet sheetName
-      . wsCells
-      . to toRows
+toTableRows = toTableRowsCustom borderBottomPredicate
 
--- |Decode cells as tabular rows from first sheet.
+-- |Decode cells from first sheet as tabular rows.
+-- The table is assumed to consist of all contiguous rows
+-- that have bottom border lines, starting with the header.
 toTableRows' :: Xlsx -- ^ Xlsx Workbook
              -> Int -- ^ Starting row index (header row)
              -> Maybe Tabular
 toTableRows' xlsx offset =
   toTableRows xlsx firstSheetName offset
   where
-    firstSheetName =
-      xlsx ^. xlSheets
-      & head
-      & fst
+    firstSheetName = fst $ head $ xlsx ^. xlSheets
+    -- ^ TODO: Is this still true with xlsx-0.3 or are sheets now
+    -- in alphabetical order??
 
-decodeRows ss offset rs =
+-- | Decode cells as tabular rows.
+--   The table is assumed to consist of all contiguous rows
+--   that fulfill the given predicate, starting with the header.
+--
+--   The predicate function is given the Xlsx @StyleSheet@ as well
+--   as a row (consisting of the row's index and the row's cells)
+--   and should return @True@ if the row is part of the table.
+toTableRowsCustom :: (StyleSheet -> (Int, [(Int, Cell)]) -> Bool)
+                           -- ^ Predicate for row selection
+                  -> Xlsx  -- ^ Xlsx Workbook
+                  -> Text  -- ^ Worksheet name to decode
+                  -> Int   -- ^ Starting row index (header row)
+                  -> Maybe Tabular
+toTableRowsCustom predicate xlsx sheetName offset = do
+  styles <- parseStyleSheet (xlsx ^. xlStyles) ^? _Right
+  rows   <- xlsx ^? ixSheet sheetName . wsCells . to toRows
+  decodeRows (predicate styles) offset rows
+
+decodeRows p offset rs = if null rs' then Nothing else Just $
   def
   & tabularHeads .~ header'
   & tabularRows .~ rows
   where
-    rs' = getCells ss offset rs
+    rs' = getCells p offset rs
     header = head rs' ^. _2
     header' =
       header
@@ -104,14 +158,14 @@ decodeRows ss offset rs =
           [cell | cix ^. contains i]
 
 -- |Pickup cells that has value from line
-getCells :: StyleSheet -- ^ Stylesheet
+getCells :: (Row -> Bool) -- ^ Predicate
          -> Int -- ^ Start line number
          -> Rows -- ^ cell rows
          -> RowValues
-getCells ss i rs =
-  startAt ss i rs
+getCells p i rs =
+  startAt i rs
   & takeContiguous i
-  & takeUntil ss
+  & takeWhile p
   & fmap rvs
   & filter vs
   where
@@ -122,8 +176,8 @@ getCells ss i rs =
     vs (i, cs) =
       any (\(_, v) -> isJust v) cs
 
-startAt :: StyleSheet -> Int -> Rows -> Rows
-startAt ss i rs =
+startAt :: Int -> Rows -> Rows
+startAt i rs =
   dropWhile f rs
   where
     f (x, _) =
@@ -136,12 +190,8 @@ takeContiguous i rs =
 
 -- |Take rows while all valued cell has bottom border line.
 -- |  * no bottom border line means out of table.
-takeUntil :: StyleSheet -> Rows -> Rows
-takeUntil ss rs =
-  takeWhile f rs
-  where
-    f (i, cs) =
-      or $ rowBordersHas borderBottom ss cs
+borderBottomPredicate :: RowPredicate -- StyleSheet -> Row -> Bool
+borderBottomPredicate ss = or . rowBordersHas borderBottom ss . snd
 
 rowBordersHas v ss cs =
   x
