@@ -19,3 +19,9 @@ main = do
   let json = encode r
   BS8.putStrLn json
 ```
+
+
+## Contributors
+
+  * [Björn Buckwalter](https://github.com/bjornbm), who has extended this library's core usability. (```toTableRowsCustom```)
+  
