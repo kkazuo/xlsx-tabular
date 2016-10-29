@@ -108,6 +108,8 @@ toTableRows' xlsx = toTableRows xlsx firstSheetName
 --   The predicate function is given the Xlsx @StyleSheet@ as well
 --   as a row (consisting of the row's index and the row's cells)
 --   and should return @True@ if the row is part of the table.
+--
+--   Since 0.1.1
 toTableRowsCustom :: (StyleSheet -> (Int, [(Int, Cell)]) -> Bool)
                            -- ^ Predicate for row selection
                   -> Xlsx  -- ^ Xlsx Workbook
