@@ -133,13 +133,18 @@ decodeRows p offset rs = if null rs' then Nothing else Just $
                                      & tabularHeadIx .~ i
                                      & tabularHeadLabel .~ t]
     toText _ = []
-    cix = fromList $ map (view tabularHeadIx) header'
-    rows = fmap rowValue (tail rs')
-    rowValue rvs = def
-                 & tabularRowIx    .~ fst rvs
-                 & tabularRowCells .~ (map snd . filter f . snd) rvs
+    ixs  = map (view tabularHeadIx) header'
+    rows = map rowValue (tail rs')
+    rowValue (ix, row) = def
+                 & tabularRowIx    .~ ix
+                 & tabularRowCells .~ insertMissingCells ixs row
       where
-        f = flip member cix . fst
+        -- Insert empty cells when there is a header but no corresponding
+        -- cell. This can happen if cells have no content nor formatting
+        -- defined.
+        insertMissingCells :: [Int] -> [(Int, Maybe CellValue)] -> [Maybe CellValue]
+        insertMissingCells ixs cs = map (join . flip lookup cs) ixs
+
 
 -- |Pickup cells that has value from line
 getCells :: (Row -> Bool) -- ^ Predicate
