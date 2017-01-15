@@ -1,17 +1,22 @@
 name:                xlsx-tabular
-version:             0.2.1
+version:             0.2.1.1
 synopsis:            Xlsx table cell value extraction utility
-description:         Convenience utility to read xlsx tabular cells.
-                     You can extract the values from xlsx files
-                     table rows to JSON format by the heuristics or
-                     your custom function.
-homepage:            http://github.com/kkazuo/xlsx-tabular#readme
+description:
+            .
+            Convenience utility to read xlsx tabular cells.
+            .
+            You can extract the values from xlsx files
+            table rows to JSON format by the heuristics or
+            your custom function.
+
+homepage:            https://github.com/kkazuo/xlsx-tabular
+bug-reports:         https://github.com/kkazuo/xlsx-tabular/issues
 license:             BSD3
 license-file:        LICENSE
-author:              Kazuo Koga
-maintainer:          obiwanko@me.com
-copyright:           (c) 2016 Kazuo Koga
-category:            Codec
+author:              Koga Kazuo <obiwanko@me.com>
+maintainer:          Koga Kazuo <obiwanko@me.com>
+copyright:           (c) 2016 Koga Kazuo
+category:            Codec, Text
 build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
