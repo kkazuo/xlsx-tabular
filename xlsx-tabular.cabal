@@ -1,5 +1,5 @@
 name:                xlsx-tabular
-version:             0.2.0
+version:             0.2.1
 synopsis:            Xlsx table decode utility
 description:         Please see README.md
 homepage:            http://github.com/kkazuo/xlsx-tabular#readme
