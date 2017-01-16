@@ -16,7 +16,7 @@ instance ToJSON RichTextRun where
 
 instance FromJSON RichTextRun where
   parseJSON (Object v) =
-    RichTextRun <$> pure Nothing <*> (v .: "text")
+    RichTextRun <$> return Nothing <*> (v .: "text")
 
 
 deriveJSON defaultOptions
