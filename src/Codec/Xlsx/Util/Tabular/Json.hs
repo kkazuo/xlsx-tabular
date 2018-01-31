@@ -19,6 +19,15 @@ instance FromJSON RichTextRun where
     RichTextRun <$> return Nothing <*> (v .: "text")
 
 
+instance ToJSON ErrorType where
+  toJSON e =
+    object [ "error" .= show e ]
+
+instance FromJSON ErrorType where
+  parseJSON (Object v) =
+    error "Unimplemented: FromJSON ErrorType"
+
+
 deriveJSON defaultOptions
   { fieldLabelModifier = drop 5
   , constructorTagModifier = map toLower . drop 4

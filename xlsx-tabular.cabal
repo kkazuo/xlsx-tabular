@@ -1,5 +1,5 @@
 name:                xlsx-tabular
-version:             0.2.2
+version:             0.2.2.1
 synopsis:            Xlsx table cell value extraction utility
 description:
             .
@@ -34,7 +34,7 @@ library
                      , data-default
                      , lens
                      , text
-                     , xlsx >=0.3
+                     , xlsx >=0.7
   default-language:    Haskell2010
 
 test-suite xlsx-tabular-test
